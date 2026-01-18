@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 Interactive Calendar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Styles */
+        :root {
+            --primary: #4B0082; /* Deep Indigo / Royal Purple */
+            --accent: #00FFFF; /* Neon Cyan */
+            --mint: #98FB98; /* Soft Mint */
+            --bg-light: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --bg-dark: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            --text-light: #333;
+            --text-dark: #ecf0f1;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-dark: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg-light);
+            color: var(--text-light);
+            transition: background 0.5s, color 0.5s;
+            overflow-x: hidden;
+        }
+
+        body.dark {
+            background: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            background: var(--glass);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark header {
+            background: var(--glass-dark);
+        }
+
+        #title {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 0;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        #title:hover {
+            transform: scale(1.05);
+        }
+
+        #subtitle {
+            font-size: 1.2em;
+            font-weight: 300;
+            color: var(--accent);
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        #dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #dark-mode-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .nav button {
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        #calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .day {
+            aspect-ratio: 1;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark .day {
+            background: var(--glass-dark);
+        }
+
+        .day:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .day.today {
+            box-shadow: 0 0 20px var(--accent);
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 20px var(--accent); }
+            to { box-shadow: 0 0 30px var(--accent); }
+        }
+
+        .day.festival {
+            background: linear-gradient(45deg, var(--mint), var(--accent));
+            color: var(--primary);
+        }
+
+        .day.has-event::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        .day-name {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark .modal-content {
+            background: var(--glass-dark);
+        }
+
+        @keyframes slideIn {
+            from { transform: scale(0.8) translateY(-20px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .close {
+            float: right;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--accent);
+            transition: transform 0.3s;
+        }
+
+        .close:hover {
+            transform: rotate(90deg);
+        }
+
+        .event-form {
+            margin-bottom: 20px;
+        }
+
+        .event-form input, .event-form select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid var(--accent);
+            border-radius: 5px;
+            background: transparent;
+            color: inherit;
+        }
+
+        .event-form button {
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .event-form button:hover {
+            transform: scale(1.05);
+        }
+
+        .events-list {
+            margin-top: 20px;
+        }
+
+        .event-item {
+            background: var(--mint);
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .event-item button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .todo-section {
+            margin-bottom: 20px;
+        }
+
+        .todo-section h3 {
+            color: var(--primary);
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .todo-item input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+            accent-color: var(--accent);
+        }
+
+        .todo-item.completed label {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .todo-item button {
+            margin-left: auto;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .notes textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid var(--accent);
+            border-radius: 5px;
+            background: transparent;
+            color: inherit;
+            resize: vertical;
+        }
+
+        .year-view {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .month-thumb {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        body.dark .month-thumb {
+            background: var(--glass-dark);
+        }
+
+        .month-thumb:hover {
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            #calendar {
+                grid-template-columns: repeat(7, 1fr);
+                font-size: 0.8em;
+            }
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+            .year-view {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <button id="dark-mode-toggle">🌙 Dark Mode</button>
+    <div class="container">
+        <header>
+            <h1 id="title" contenteditable="true">Your 2026 Planner</h1>
+            <p id="subtitle" contenteditable="true">Plan your year with style</p>
+        </header>
+        <div class="nav">
+            <button id="prev-month">Previous Month</button>
+            <h2 id="current-month">January 2026</h2>
+            <button id="next-month">Next Month</button>
+            <button id="year-view-btn">Year View</button>
+        </div>
+        <div id="calendar-container">
+            <div id="calendar"></div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modal-date"></h2>
+            <div class="event-form">
+                <h3>Add Event</h3>
+                <input type="text" id="event-label" placeholder="Event Label">
+                <select id="event-type">
+                    <option value="birthday">Birthday</option>
+                    <option value="special">Special Date</option>
+                </select>
+                <input type="text" id="event-emoji" placeholder="Emoji (e.g., 🎉)">
+                <button id="add-event">Add Event</button>
+            </div>
+            <div class="events-list">
+                <h3>Events</h3>
+                <div id="events"></div>
+            </div>
+            <div class="todo-section">
+                <h3>To-Do Lists</h3>
+                <div id="todos">
+                    <div class="todo-section" data-section="work">
+                        <h4>Work</h4>
+                        <input type="text" class="todo-input" placeholder="Add task">
+                        <button class="add-todo">Add</button>
+                        <div class="todo-list"></div>
+                    </div>
+                    <div class="todo-section" data-section="personal">
+                        <h4>Personal</h4>
+                        <input type="text" class="todo-input" placeholder="Add task">
+                        <button class="add-todo">Add</button>
+                        <div class="todo-list"></div>
+                    </div>
+                    <div class="todo-section" data-section="health">
+                        <h4>Health</h4>
+                        <input type="text" class="todo-input" placeholder="Add task">
+                        <button class="add-todo">Add</button>
+                        <div class="todo-list"></div>
+                    </div>
+                    <div class="todo-section" data-section="learning">
+                        <h4>Learning</h4>
+                        <input type="text" class="todo-input" placeholder="Add task">
+                        <button class="add-todo">Add</button>
+                        <div class="todo-list"></div>
+                    </div>
+                    <div class="todo-section" data-section="misc">
+                        <h4>Misc</h4>
+                        <input type="text" class="todo-input" placeholder="Add task">
+                        <button class="add-todo">Add</button>
+                        <div class="todo-list"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="notes">
+                <h3>Notes</h3>
+                <textarea id="notes-text" placeholder="Add your notes here..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript Code
+        const calendar = document.getElementById('calendar');
+        const currentMonthEl = document.getElementById('current-month');
+        const modal = document.getElementById('modal');
+        const modalDate = document.getElementById('modal-date');
+        const closeModal = document.querySelector('.close');
+        const addEventBtn = document.getElementById('add-event');
+        const eventsList = document.getElementById('events');
+        const notesText = document.getElementById('notes-text');
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const titleEl = document.getElementById('title');
+        const subtitleEl = document.getElementById('subtitle');
+        const yearViewBtn = document.getElementById('year-view-btn');
+        const calendarContainer = document.getElementById('calendar-container');
+
+        let currentDate = new Date(2026, 0, 1); // January 2026
+        let events = JSON.parse(localStorage.getItem('events')) || {};
+        let todos = JSON.parse(localStorage.getItem('todos')) || { work: [], personal: [], health: [], learning: [], misc: [] };
+        let notes = JSON.parse(localStorage.getItem('notes')) || {};
+        let isYearView = false;
+
+        // Festival dates for 2026 (example)
+        const festivals = {
+            '2026-01-01': { name: 'New Year\'s Day', icon: '🎉', color: 'gold' },
+            '2026-02-14': { name: 'Valentine\'s Day', icon: '❤️', color: 'pink' },
+            '2026-12-25': { name: 'Christmas', icon: '🎄', color: 'green' },
+            // Add more as needed
+        };
+
+        function saveData() {
+            localStorage.setItem('events', JSON.stringify(events));
+            localStorage.setItem('todos', JSON.stringify(todos));
+            localStorage.setItem('notes', JSON.stringify(notes));
+            localStorage.setItem('title', titleEl.textContent);
+            localStorage.setItem('subtitle', subtitleEl.textContent);
+        }
+
+        function loadData() {
+            titleEl.textContent = localStorage.getItem('title') || 'Your 2026 Planner';
+            subtitleEl.textContent = localStorage.getItem('subtitle') || 'Plan your year with style';
+        }
+
+        function renderCalendar() {
+            calendar.innerHTML = '';
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const lastDate = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+            const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+
+            // Day names
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            days.forEach(day => {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'day day-name';
+                dayEl.textContent = day;
+                calendar.appendChild(dayEl);
+            });
+
+            // Empty cells for previous month
+            for (let i = 0; i < firstDay; i++) {
+                const emptyEl = document.createElement('div');
+                emptyEl.className = 'day';
+                calendar.appendChild(emptyEl);
+            }
+
+            // Days of the month
+            for (let date = 1; date <= lastDate; date++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'day';
+                dayEl.textContent = date;
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
